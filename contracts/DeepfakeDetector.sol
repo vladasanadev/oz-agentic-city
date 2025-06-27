@@ -13,52 +13,20 @@ contract DeepfakeDetector {
     }
     
     mapping(string => DetectionResult) public results;
-    mapping(address => bool) public authorizedAgents;
-    mapping(address => uint256) public agentScans;
-    
     uint256 public totalScans;
-    address public owner;
     
-    event DetectionStored(
-        string indexed fileHash,
-        bool isDeepfake,
-        uint8 confidence,
-        address agent,
-        string agentId
-    );
+    event DetectionRequested(string indexed fileHash, string filename, address requester);
+    event DetectionStored(string indexed fileHash, bool isDeepfake, uint8 confidence, address agent, string agentId);
     
-    event AgentAuthorized(address agent, string agentId);
-    
-    modifier onlyOwner() {
-        require(msg.sender == owner, "Only owner can call this");
-        _;
-    }
-    
-    modifier onlyAuthorizedAgent() {
-        require(authorizedAgents[msg.sender], "Only authorized agents can store results");
-        _;
-    }
-    
-    constructor() {
-        owner = msg.sender;
-    }
-    
-    // Owner authorizes AI agents
-    function authorizeAgent(address agent, string memory agentId) public onlyOwner {
-        authorizedAgents[agent] = true;
-        emit AgentAuthorized(agent, agentId);
-    }
-    
-    // Agents store detection results
+    // Anyone can store detection results (simplified for MVP)
     function storeResult(
         string memory fileHash,
         string memory filename,
         bool isDeepfake,
         uint8 confidence,
         string memory agentId
-    ) public onlyAuthorizedAgent {
+    ) public {
         require(confidence <= 100, "Confidence must be <= 100");
-        require(bytes(results[fileHash].fileHash).length == 0, "Result already exists");
         
         DetectionResult memory result = DetectionResult({
             fileHash: fileHash,
@@ -71,7 +39,6 @@ contract DeepfakeDetector {
         });
         
         results[fileHash] = result;
-        agentScans[msg.sender]++;
         totalScans++;
         
         emit DetectionStored(fileHash, isDeepfake, confidence, msg.sender, agentId);
@@ -79,11 +46,71 @@ contract DeepfakeDetector {
     
     // Public function to request detection (triggers off-chain agent)
     function requestDetection(string memory fileHash, string memory filename) public {
-        // This emits an event that off-chain agents listen to
         emit DetectionRequested(fileHash, filename, msg.sender);
     }
     
-    event DetectionRequested(string indexed fileHash, string filename, address requester);
+    // Immediate mock detection for MVP (processes request instantly)
+    function requestDetectionWithResult(string memory fileHash, string memory filename) public {
+        // Emit request event
+        emit DetectionRequested(fileHash, filename, msg.sender);
+        
+        // Generate mock result immediately
+        bool isDeepfake = _mockDetection(filename, fileHash);
+        uint8 confidence = uint8(75 + (uint256(keccak256(abi.encodePacked(fileHash))) % 20)); // 75-95%
+        
+        // Store result immediately
+        DetectionResult memory result = DetectionResult({
+            fileHash: fileHash,
+            filename: filename,
+            isDeepfake: isDeepfake,
+            confidence: confidence,
+            timestamp: block.timestamp,
+            agent: address(this), // Contract itself as agent
+            agentId: "built-in-ai-agent"
+        });
+        
+        results[fileHash] = result;
+        totalScans++;
+        
+        emit DetectionStored(fileHash, isDeepfake, confidence, address(this), "built-in-ai-agent");
+    }
+    
+    // Mock AI detection logic
+    function _mockDetection(string memory filename, string memory fileHash) private pure returns (bool) {
+        bytes memory nameBytes = bytes(filename);
+        
+        // Check for "fake", "deep", "synthetic" in filename
+        if (_contains(nameBytes, "fake") || _contains(nameBytes, "deep") || _contains(nameBytes, "synthetic")) {
+            return true; // Deepfake detected
+        }
+        
+        // Check for "real", "authentic", "original" in filename
+        if (_contains(nameBytes, "real") || _contains(nameBytes, "authentic") || _contains(nameBytes, "original")) {
+            return false; // Authentic
+        }
+        
+        // Hash-based pseudo-random detection (25% chance of deepfake)
+        uint256 hashNum = uint256(keccak256(abi.encodePacked(fileHash)));
+        return (hashNum % 4) == 0;
+    }
+    
+    // Helper function to check if bytes contain a substring
+    function _contains(bytes memory haystack, string memory needle) private pure returns (bool) {
+        bytes memory needleBytes = bytes(needle);
+        if (needleBytes.length > haystack.length) return false;
+        
+        for (uint i = 0; i <= haystack.length - needleBytes.length; i++) {
+            bool found = true;
+            for (uint j = 0; j < needleBytes.length; j++) {
+                if (haystack[i + j] != needleBytes[j]) {
+                    found = false;
+                    break;
+                }
+            }
+            if (found) return true;
+        }
+        return false;
+    }
     
     // View functions
     function getResult(string memory fileHash) 
@@ -98,21 +125,8 @@ contract DeepfakeDetector {
         return totalScans;
     }
     
-    function getAgentScans(address agent) public view returns (uint256) {
-        return agentScans[agent];
-    }
-    
-    function isAgentAuthorized(address agent) public view returns (bool) {
-        return authorizedAgents[agent];
-    }
-    
-    // Emergency functions
-    function removeAgent(address agent) public onlyOwner {
-        authorizedAgents[agent] = false;
-    }
-    
-    function transferOwnership(address newOwner) public onlyOwner {
-        require(newOwner != address(0), "Invalid address");
-        owner = newOwner;
+    // Check if result exists for a file hash
+    function hasResult(string memory fileHash) public view returns (bool) {
+        return bytes(results[fileHash].fileHash).length > 0;
     }
 } 

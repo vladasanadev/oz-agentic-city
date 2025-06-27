@@ -16,11 +16,12 @@ const AURORA_TESTNET = {
 };
 
 // Contract configuration (update after deployment)
-const CONTRACT_ADDRESS = "0x61a7a20fc63a5E228771955D86aCC291C068F00A"; // Update with deployed contract address
+const CONTRACT_ADDRESS = "0x852a4844269a9329B24ecb09a7AbE4c6Fb70481d"; // Update with deployed contract address
 const CONTRACT_ABI = [
-  "function requestDetection(string fileHash, string filename) public",
+  "function requestDetectionWithResult(string fileHash, string filename) public",
   "function getResult(string fileHash) public view returns (tuple(string fileHash, string filename, bool isDeepfake, uint8 confidence, uint256 timestamp, address agent, string agentId))",
   "function getTotalScans() public view returns (uint256)",
+  "function hasResult(string fileHash) public view returns (bool)",
   "event DetectionRequested(string indexed fileHash, string filename, address requester)",
   "event DetectionStored(string indexed fileHash, bool isDeepfake, uint8 confidence, address agent, string agentId)"
 ];
@@ -140,15 +141,21 @@ function App() {
       console.log(`📁 File uploaded: ${file.name}`);
       console.log(`🔗 File hash: ${fileHash}`);
 
-      // Request detection from autonomous agent
-      const tx = await contract.requestDetection(fileHash, file.name);
+      // Request detection (try both new and old function)
+      let tx;
+      try {
+        tx = await contract.requestDetectionWithResult(fileHash, file.name);
+      } catch (error) {
+        console.log("New function failed, trying old function...");
+        tx = await contract.requestDetection(fileHash, file.name);
+      }
       console.log(`📝 Detection request sent: ${tx.hash}`);
       
       await tx.wait();
-      console.log('✅ Transaction confirmed, waiting for agent...');
+      console.log('✅ Transaction confirmed, getting result...');
 
-      // Poll for result from autonomous agent
-      await pollForResult(fileHash);
+      // Get result immediately (no polling needed)
+      await getImmediateResult(fileHash);
 
     } catch (error) {
       console.error('Detection request failed:', error);
@@ -156,47 +163,41 @@ function App() {
     }
   };
 
-  const pollForResult = async (fileHash: string) => {
-    const maxAttempts = 30; // 1 minute max wait
-    let attempts = 0;
-
-    const poll = async () => {
-      try {
+  const getImmediateResult = async (fileHash: string) => {
+    try {
+      // Check if result exists
+      const hasResult = await contract!.hasResult(fileHash);
+      
+      if (hasResult) {
         const result = await contract!.getResult(fileHash);
         
-        if (result.fileHash !== '') {
-          const detectionResult: DetectionResult = {
-            fileHash: result.fileHash,
-            filename: result.filename,
-            isDeepfake: result.isDeepfake,
-            confidence: result.confidence,
-            timestamp: Number(result.timestamp),
-            agent: result.agent,
-            agentId: result.agentId,
-          };
+        const detectionResult: DetectionResult = {
+          fileHash: result.fileHash,
+          filename: result.filename,
+          isDeepfake: result.isDeepfake,
+          confidence: result.confidence,
+          timestamp: Number(result.timestamp),
+          agent: result.agent,
+          agentId: result.agentId,
+        };
 
-          setResult(detectionResult);
-          setIsProcessing(false);
-          
-          // Update total scans
-          const scans = await contract!.getTotalScans();
-          setTotalScans(Number(scans));
-          return;
-        }
-      } catch (error) {
-        console.log('Polling for result...', attempts + 1);
-      }
-
-      attempts++;
-      if (attempts < maxAttempts) {
-        setTimeout(poll, 2000); // Poll every 2 seconds
+        setResult(detectionResult);
+        setIsProcessing(false);
+        
+        // Update total scans
+        const scans = await contract!.getTotalScans();
+        setTotalScans(Number(scans));
+        
+        console.log('🎉 Detection completed:', detectionResult);
       } else {
         setIsProcessing(false);
-        alert('Timeout waiting for detection result. Please try again.');
+        alert('No result found. Please try again.');
       }
-    };
-
-    poll();
+    } catch (error) {
+      console.error('Error getting result:', error);
+      setIsProcessing(false);
+      alert('Error getting detection result. Please try again.');
+    }
   };
 
   return (
