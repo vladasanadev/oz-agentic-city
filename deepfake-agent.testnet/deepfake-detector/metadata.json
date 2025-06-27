@@ -1,0 +1,27 @@
+{
+    "name": "deepfake-detector",
+    "version": "1.0.0",
+    "description": "NEAR Shade AI Agent for autonomous deepfake detection and verification",
+    "category": "agent",
+    "tags": ["deepfake", "ai", "detection", "security", "media", "verification", "near", "blockchain"],
+    "details": {
+      "agent": {
+        "defaults": {
+          "model": "llama-v3p1-70b-instruct",
+          "model_provider": "fireworks",
+          "model_temperature": 0.3,
+          "model_max_tokens": 4096
+        }
+      }
+    },
+    "show_entry": true,
+    "author": "NEAR Shade Agent Team",
+    "license": "MIT",
+    "capabilities": [
+        "Image deepfake detection",
+        "Video manipulation analysis",
+        "Blockchain result storage",
+        "Autonomous processing",
+        "Verifiable AI results"
+    ]
+}
