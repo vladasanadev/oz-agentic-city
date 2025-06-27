@@ -10,6 +10,8 @@ const CONTRACT_ABI = [
   "function requestDetection(string fileHash, string filename) public",
   "function getResult(string fileHash) public view returns (tuple(string fileHash, string filename, bool isDeepfake, uint8 confidence, uint256 timestamp, address agent, string agentId))",
   "function isAgentAuthorized(address agent) public view returns (bool)",
+  "function authorizeAgent(address agent, string agentId) public",
+  "function getTotalScans() public view returns (uint256)",
   "event DetectionRequested(string indexed fileHash, string filename, address requester)",
   "event DetectionStored(string indexed fileHash, bool isDeepfake, uint8 confidence, address agent, string agentId)"
 ];
@@ -20,7 +22,7 @@ class AutonomousDeepfakeAgent {
     this.agentId = `Agent_${crypto.randomBytes(4).toString('hex')}`;
     
     // Setup provider and signer
-    this.provider = new ethers.providers.JsonRpcProvider(AURORA_RPC_URL);
+    this.provider = new ethers.JsonRpcProvider(AURORA_RPC_URL);
     this.wallet = new ethers.Wallet(agentPrivateKey, this.provider);
     this.contract = new ethers.Contract(contractAddress, CONTRACT_ABI, this.wallet);
     
@@ -37,13 +39,14 @@ class AutonomousDeepfakeAgent {
     try {
       const isAuthorized = await this.contract.isAgentAuthorized(this.wallet.address);
       if (!isAuthorized) {
-        console.log("⚠️ Agent not authorized! Owner needs to authorize this agent.");
-        return;
+        console.log("⚠️ Agent not authorized! But continuing to listen anyway...");
+        console.log("💡 Make sure to authorize the agent in Remix IDE!");
+      } else {
+        console.log("✅ Agent is authorized!");
       }
-      console.log("✅ Agent is authorized!");
     } catch (error) {
-      console.error("❌ Error checking authorization:", error.message);
-      return;
+      console.log("⚠️ Could not check authorization, but continuing...");
+      console.log("💡 Make sure the agent is authorized in the contract!");
     }
 
     // Listen for DetectionRequested events

@@ -16,7 +16,7 @@ const AURORA_TESTNET = {
 };
 
 // Contract configuration (update after deployment)
-const CONTRACT_ADDRESS = ""; // Update with deployed contract address
+const CONTRACT_ADDRESS = "0x61a7a20fc63a5E228771955D86aCC291C068F00A"; // Update with deployed contract address
 const CONTRACT_ABI = [
   "function requestDetection(string fileHash, string filename) public",
   "function getResult(string fileHash) public view returns (tuple(string fileHash, string filename, bool isDeepfake, uint8 confidence, uint256 timestamp, address agent, string agentId))",
