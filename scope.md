@@ -10,13 +10,13 @@
 ## 🏗️ Simplified Architecture
 
 ```
-React Frontend (Simple Components)
+React Frontend (Metamask/NEAR Wallet)
     ↓
-NEAR Shade Agent (Mock AI Detection)
+Autonomous Agent Service (Mock AI Detection)
     ↓ 
-NEAR Smart Contract (Result Storage)
+Aurora Smart Contract (Solidity on NEAR)
     ↓
-0G Network (File Storage)
+Simple File Storage (Upload simulation)
 ```
 
 ## 🎯 Core Objectives (1-Day Focus)
@@ -39,23 +39,23 @@ NEAR Smart Contract (Result Storage)
 ## 🛠️ Simplified Technology Stack
 
 ### Core Technologies (Minimal)
-- **Blockchain**: NEAR Protocol (Shade Agents + Smart Contract)
-- **Storage**: 0G Network (File storage)
-- **Frontend**: React (Simple components, NEAR Wallet integration)
-- **AI Agent**: Shade Agent with mock detection responses
+- **Blockchain**: Aurora (NEAR's EVM - Solidity contracts)
+- **Frontend**: React (Metamask for Aurora network)
+- **AI Agent**: Autonomous JavaScript service (simulates agent behavior)
+- **Storage**: Simple file upload simulation
 
 ## 📋 1-Day Implementation Timeline
 
-### Morning (4 hours): Setup & Agent
-- [ ] **Hour 1**: NEAR testnet + 0G Network setup
-- [ ] **Hour 2**: Create simple NEAR smart contract
-- [ ] **Hour 3**: Deploy Shade Agent with mock AI logic
+### Morning (4 hours): Setup & Contract
+- [ ] **Hour 1**: Metamask + Aurora testnet setup
+- [ ] **Hour 2**: Create Solidity smart contract
+- [ ] **Hour 3**: Deploy to Aurora + create autonomous agent service
 - [ ] **Hour 4**: Test agent + contract integration
 
 ### Afternoon (4 hours): Frontend & Demo
-- [ ] **Hour 5**: Create React app with NEAR Wallet
-- [ ] **Hour 6**: Add file upload + 0G storage
-- [ ] **Hour 7**: Connect to Shade Agent + display results
+- [ ] **Hour 5**: Create React app with Aurora integration
+- [ ] **Hour 6**: Add file upload + agent simulation
+- [ ] **Hour 7**: Connect agent service to Aurora contract
 - [ ] **Hour 8**: Record demo video and polish
 
 ## 🔍 Technical Specifications
