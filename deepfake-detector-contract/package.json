@@ -1,0 +1,32 @@
+{
+  "name": "deepfake-detector-contract",
+  "version": "1.0.0",
+  "description": "Solidity smart contract for deepfake detection results on Aurora/NEAR",
+  "main": "index.js",
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "deploy:aurora-testnet": "hardhat run scripts/deploy.js --network aurora-testnet",
+    "deploy:aurora-mainnet": "hardhat run scripts/deploy.js --network aurora-mainnet",
+    "verify": "hardhat verify --network aurora-testnet"
+  },
+  "keywords": [
+    "solidity",
+    "smart-contract",
+    "deepfake",
+    "aurora",
+    "near",
+    "blockchain"
+  ],
+  "author": "Vladyslav",
+  "license": "MIT",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
+    "@nomicfoundation/hardhat-verify": "^2.0.0",
+    "hardhat": "^2.19.4"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^5.0.1",
+    "dotenv": "^16.3.1"
+  }
+} 
