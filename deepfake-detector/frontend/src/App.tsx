@@ -108,15 +108,15 @@ function App() {
     }
 
     try {
-      const provider = new ethers.providers.Web3Provider(window.ethereum!);
-      const signer = provider.getSigner();
+      const provider = new ethers.BrowserProvider(window.ethereum!);
+      const signer = await provider.getSigner();
       const contractInstance = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
       
       setContract(contractInstance);
       
       // Get total scans
       const scans = await contractInstance.getTotalScans();
-      setTotalScans(scans.toNumber());
+      setTotalScans(Number(scans));
     } catch (error) {
       console.error('Error initializing contract:', error);
     }
@@ -170,7 +170,7 @@ function App() {
             filename: result.filename,
             isDeepfake: result.isDeepfake,
             confidence: result.confidence,
-            timestamp: result.timestamp.toNumber(),
+            timestamp: Number(result.timestamp),
             agent: result.agent,
             agentId: result.agentId,
           };
@@ -180,7 +180,7 @@ function App() {
           
           // Update total scans
           const scans = await contract!.getTotalScans();
-          setTotalScans(scans.toNumber());
+          setTotalScans(Number(scans));
           return;
         }
       } catch (error) {
