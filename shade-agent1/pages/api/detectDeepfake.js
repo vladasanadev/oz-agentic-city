@@ -10,7 +10,7 @@ export const config = {
 
 // TEE endpoint URLs (your actual deployed CVMs)
 const TEE_ENDPOINTS = [
-    'https://83d4c8c5956aa05255f63983c6d86430468199df-3140.dstack-prod5.phala.network:443',
+    // 'https://83d4c8c5956aa05255f63983c6d86430468199df-3140.dstack-prod5.phala.network:443',
     'https://e31c914a483fc9736451060f45f22d7a499a07f9-3140.dstack-prod5.phala.network:443'
 ];
 
