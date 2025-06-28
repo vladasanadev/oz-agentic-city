@@ -1,3 +1,15 @@
+/* Spline 3D Background */
+.splineBackground {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: -1;
+  overflow: hidden;
+  opacity: 0.7;
+}
+
 .overlay {
   min-height: 100vh;
   min-width: 100%;
@@ -32,7 +44,7 @@
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.3) 0%, rgba(118, 75, 162, 0.3) 100%);
 }
 
 .btn {
