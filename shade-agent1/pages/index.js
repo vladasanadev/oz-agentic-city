@@ -287,7 +287,7 @@ export default function Home() {
                                 </div>
                                 <div className={styles.detailRow}>
                                     <span>File Entropy:</span>
-                                    <span>{detectionResult.features?.entropy?.toFixed(2) || 'N/A'}</span>
+                                    <span>{detectionResult?.result?.features?.entropy?.toFixed(2) || 'N/A'}</span>
                                 </div>
                             </div>
 
