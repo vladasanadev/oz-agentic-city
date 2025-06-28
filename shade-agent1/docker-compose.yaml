@@ -21,7 +21,7 @@ services:
     shade-agent-api-test:
         platform: linux/amd64 # Explicitly set for TDX
         # shade-agent-app-image
-        image: pivortex/my-app@sha256:3eb932a8352a6b5aafc20d2b181d8de474569e5bab2bf5ce8363f74ce9968edf
+        image: vladadev827/detector@sha256:89d9eb37e24744914b0f7246013615fc1630e39d1f781093df2fdc5518fed642
         container_name: shade-agent-api-test
         ports:
             - '3000:3000'

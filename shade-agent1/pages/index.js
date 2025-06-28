@@ -2,6 +2,7 @@ import Head from 'next/head';
 import styles from '../styles/Home.module.css';
 import { useState, useEffect } from 'react';
 import Overlay from '../components/Overlay';
+import Spline from '@splinetool/react-spline';
 
 const contractId = process.env.NEXT_PUBLIC_contractId;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -134,6 +135,14 @@ export default function Home() {
                 <meta name="description" content="AI-powered deepfake detection using NEAR Shade Agents" />
                 <link rel="icon" href="/favicon.ico" />
             </Head>
+            
+            {/* Spline 3D Background */}
+            <div className={styles.splineBackground}>
+                <Spline
+                    scene="https://prod.spline.design/T13hoFcu40hYf79c/scene.splinecode" 
+                />
+            </div>
+            
             <Overlay message={message} />
 
             <main className={styles.main}>
