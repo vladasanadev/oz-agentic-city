@@ -146,7 +146,7 @@ export default function Home() {
             <Overlay message={message} />
 
             <main className={styles.main}>
-                <h1 className={styles.title}>🤖 Deepfake Detection Agent</h1>
+                <h1 className={styles.title}>Deepfake Detection Agent</h1>
                 <div className={styles.subtitleContainer}>
                     <h2 className={styles.subtitle}>Powered by NEAR Shade Agents</h2>
                 </div>
