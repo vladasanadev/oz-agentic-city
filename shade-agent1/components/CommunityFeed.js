@@ -47,9 +47,13 @@ export default function CommunityFeed() {
     } catch (error) {
       console.error('❌ Failed to load community data:', error);
       
+      // Check if it's a gas limit issue
+      if (error.message.includes('GasLimitExceeded') || error.message.includes('gas')) {
+        setError('NEAR Social testnet query exceeded gas limits. Using sample data to demonstrate features. Will retry real contract on next refresh.');
+      }
       // Check if it's a contract availability issue
-      if (error.message.includes('not available') || error.message.includes('does not exist')) {
-        setError('NEAR Social contract not available on testnet. Social features are currently disabled.');
+      else if (error.message.includes('not available') || error.message.includes('does not exist')) {
+        setError('NEAR Social testnet contract not available. Using sample data for testing.');
       } else {
         setError(error.message);
       }
@@ -133,13 +137,22 @@ export default function CommunityFeed() {
           </div>
         </div>
         
-        {/* Detection result badge */}
-        <div className={`px-2 py-1 rounded text-xs font-medium ${
-          post.isDeepfake 
-            ? 'bg-red-900/30 text-red-400 border border-red-700' 
-            : 'bg-green-900/30 text-green-400 border border-green-700'
-        }`}>
-          {post.isDeepfake ? '🚨 Deepfake' : '✅ Authentic'}
+        <div className="flex items-center gap-2">
+          {/* Mock mode indicator */}
+          {post.mockMode && (
+            <div className="px-2 py-1 rounded text-xs font-medium bg-yellow-900/30 text-yellow-400 border border-yellow-700">
+              Test
+            </div>
+          )}
+          
+          {/* Detection result badge */}
+          <div className={`px-2 py-1 rounded text-xs font-medium ${
+            post.isDeepfake 
+              ? 'bg-red-900/30 text-red-400 border border-red-700' 
+              : 'bg-green-900/30 text-green-400 border border-green-700'
+          }`}>
+            {post.isDeepfake ? '🚨 Deepfake' : '✅ Authentic'}
+          </div>
         </div>
       </div>
 
@@ -182,7 +195,7 @@ export default function CommunityFeed() {
             Like
           </button>
           
-          {post.socialUrl && (
+          {post.socialUrl ? (
             <a
               href={post.socialUrl}
               target="_blank"
@@ -194,6 +207,13 @@ export default function CommunityFeed() {
               </svg>
               View on NEAR Social
             </a>
+          ) : (
+            <span className="text-xs text-gray-500 flex items-center gap-1">
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M3 5a2 2 0 012-2h10a2 2 0 012 2v8a2 2 0 01-2 2h-2.22l.123.489.804.804A1 1 0 0113 18H7a1 1 0 01-.707-1.707l.804-.804L7.22 15H5a2 2 0 01-2-2V5zm5.771 7H5V5h10v7H8.771z" clipRule="evenodd"/>
+              </svg>
+              Test Data
+            </span>
           )}
         </div>
       </div>
@@ -210,23 +230,60 @@ export default function CommunityFeed() {
   }
 
   if (error) {
-    return (
-      <div className="community-feed text-center py-12">
-        <div className="text-red-400 mb-4">
-          <svg className="w-12 h-12 mx-auto mb-2" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd"/>
-          </svg>
-          <p>Failed to load community feed</p>
+    // Check if it's a gas limit error (which means we're using mock data)
+    const isGasLimitError = error.includes('gas') || error.includes('GasLimitExceeded');
+    
+    if (isGasLimitError) {
+      return (
+        <div className="community-feed">
+          <div className="mb-8 border border-yellow-700 bg-yellow-900/20 p-6 rounded-lg">
+            <div className="flex items-center gap-3 mb-3">
+              <svg className="w-6 h-6 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd"/>
+              </svg>
+              <h3 className="text-lg font-medium text-yellow-400">Using Test Data</h3>
+            </div>
+            <p className="text-yellow-300 mb-4">
+              Attempted to connect to NEAR Social testnet (v1.social08.testnet) but queries exceeded gas limits. Showing sample data to demonstrate features.
+            </p>
+            <p className="text-yellow-600 text-sm mb-4">
+              The app will retry the real testnet contract on each refresh. This fallback ensures you can test all features.
+            </p>
+            <button
+              onClick={loadCommunityData}
+              className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded transition-colors text-sm"
+            >
+              Try Real Data Again
+            </button>
+          </div>
+          
+          {/* Load the community data anyway (will use mock) */}
+          <div className="space-y-4">
+            {filteredAndSortedPosts.map((post) => (
+              <PostCard key={post.id} post={post} />
+            ))}
+          </div>
         </div>
-        <p className="text-gray-500 text-sm mb-4">{error}</p>
-        <button
-          onClick={loadCommunityData}
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
-        >
-          Try Again
-        </button>
-      </div>
-    );
+      );
+    } else {
+      return (
+        <div className="community-feed text-center py-12">
+          <div className="text-red-400 mb-4">
+            <svg className="w-12 h-12 mx-auto mb-2" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd"/>
+            </svg>
+            <p>Failed to load community feed</p>
+          </div>
+          <p className="text-gray-500 text-sm mb-4">{error}</p>
+          <button
+            onClick={loadCommunityData}
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
+          >
+            Try Again
+          </button>
+        </div>
+      );
+    }
   }
 
   return (

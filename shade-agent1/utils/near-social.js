@@ -18,6 +18,7 @@ const SOCIAL_CONTRACT = process.env.NODE_ENV === 'production'
 const USE_MOCK_SOCIAL = process.env.NEXT_PUBLIC_USE_MOCK_SOCIAL === 'true';
 
 // Track whether we should use mock mode (determined at runtime)
+// Only use mock if explicitly set via environment variable
 let shouldUseMock = USE_MOCK_SOCIAL;
 
 // Initialize connection to NEAR Social contract
@@ -105,48 +106,91 @@ export async function shareDetectionResult(result, message = '') {
       success: true,
       transactionHash: result_tx.transaction?.hash,
       postData: postData,
-      socialUrl: `https://near.social/post/${accountId}@${timestamp}`
+      socialUrl: `https://near.social/post/${accountId}@${timestamp}`, // Note: This won't work for testnet
+      testnetExplorer: `https://explorer.testnet.near.org/transactions/${result_tx.transaction?.hash}`,
+      realBlockchain: true
     };
 
   } catch (error) {
     console.error('❌ Failed to share on NEAR Social:', error);
     
-    // If social contract isn't available, fall back to mock mode
+    // Handle specific error cases with fallback to mock for this call only
     if (error.message.includes('not available') || error.message.includes('does not exist')) {
-      console.log('📝 Falling back to mock social contract for testing');
-      shouldUseMock = true;
+      console.log('📝 Contract not available, using mock sharing for this request');
+      return await mockShareDetectionResult(result, message);
+    }
+    
+    if (error.message.includes('GasLimitExceeded') || error.message.includes('gas')) {
+      console.log('⚠️ Gas limit exceeded, using mock sharing for this request');
       return await mockShareDetectionResult(result, message);
     }
     
     return {
       success: false,
-      error: error.message
+      error: `Failed to share on ${SOCIAL_CONTRACT}: ${error.message}`
     };
   }
 }
 
 // Get community feed of shared detection results
 export async function getCommunityFeed(limit = 50) {
-  // Check if we should use mock mode
+  // Check if we should use mock mode (only if explicitly set)
   if (shouldUseMock) {
-    // Add sample data for testing
+    console.log('🔧 Using mock mode (explicitly enabled)');
     addMockSampleData();
     return await mockGetCommunityFeed(limit);
   }
 
+  // Always try real NEAR Social testnet contract first
   try {
+    console.log(`🔗 Connecting to NEAR Social: ${SOCIAL_CONTRACT}`);
     const contract = await getSocialContract();
 
-    console.log('📡 Fetching community detection feed...');
+    console.log('📡 Fetching community detection feed from real contract...');
 
     // Get recent posts with deepfake detection type
-    const posts = await contract.get({
-      keys: ['*/post/main'],
-      options: {
-        limit: limit,
-        order: 'desc'
+    // Note: Querying all posts with '*' can exceed gas limits on NEAR Social
+    // For now, we'll use a targeted approach with known accounts or fall back to mock
+    let posts = {};
+    
+    try {
+      // Try to get posts from the current user first (most efficient)
+      let accountId = null;
+      try {
+        const signedIn = await isSignedIn();
+        if (signedIn) {
+          accountId = await getAccountId();
+        }
+      } catch (walletError) {
+        console.warn('⚠️ Wallet not connected, skipping user posts');
       }
-    });
+      
+      if (accountId) {
+        posts = await contract.get({
+          keys: [`${accountId}/post/main`],
+          options: {
+            limit: 10
+          }
+        });
+      }
+      
+      // If no user posts found, try a very limited wildcard query
+      if (!posts || Object.keys(posts).length === 0) {
+        posts = await contract.get({
+          keys: ['*/post/main'],
+          options: {
+            limit: 3, // Very small limit to prevent gas issues
+          }
+        });
+      }
+    } catch (gasError) {
+      if (gasError.message.includes('GasLimitExceeded') || gasError.message.includes('gas')) {
+        console.warn('⚠️ NEAR Social query exceeded gas limit for this request');
+        throw new Error('GasLimitExceeded - query too expensive');
+      } else {
+        throw gasError;
+      }
+    }
 
     const detectionPosts = [];
 
@@ -187,19 +231,26 @@ export async function getCommunityFeed(limit = 50) {
     };
 
   } catch (error) {
-    console.error('❌ Failed to get community feed:', error);
+    console.error('❌ Failed to get community feed from real contract:', error);
     
-    // If social contract isn't available, fall back to mock mode
-    if (error.message.includes('not available') || error.message.includes('does not exist')) {
-      console.log('📝 Falling back to mock social contract for testing');
-      shouldUseMock = true;
+    // Handle gas limit exceeded errors - fall back to mock for this call only
+    if (error.message.includes('GasLimitExceeded') || error.message.includes('gas')) {
+      console.log('⚠️ Gas limit exceeded, using mock data for this request (will retry real contract next time)');
       addMockSampleData();
       return await mockGetCommunityFeed(limit);
     }
     
+    // If social contract isn't available, fall back to mock mode for this call
+    if (error.message.includes('not available') || error.message.includes('does not exist')) {
+      console.log('📝 Contract not available, using mock data for this request');
+      addMockSampleData();
+      return await mockGetCommunityFeed(limit);
+    }
+    
+    // For other errors, return the actual error
     return {
       success: false,
-      error: error.message,
+      error: `Failed to connect to ${SOCIAL_CONTRACT}: ${error.message}`,
       posts: []
     };
   }
@@ -304,16 +355,20 @@ export async function likeDetectionPost(postAccountId, postTimestamp) {
   } catch (error) {
     console.error('❌ Failed to like post:', error);
     
-    // If social contract isn't available, fall back to mock mode
+    // Handle specific error cases with fallback to mock for this call only
     if (error.message.includes('not available') || error.message.includes('does not exist')) {
-      console.log('📝 Falling back to mock social contract for testing');
-      shouldUseMock = true;
+      console.log('📝 Contract not available, using mock like for this request');
+      return await mockLikeDetectionPost(postAccountId, postTimestamp);
+    }
+    
+    if (error.message.includes('GasLimitExceeded') || error.message.includes('gas')) {
+      console.log('⚠️ Gas limit exceeded, using mock like for this request');
       return await mockLikeDetectionPost(postAccountId, postTimestamp);
     }
     
     return {
       success: false,
-      error: error.message
+      error: `Failed to like post on ${SOCIAL_CONTRACT}: ${error.message}`
     };
   }
 }
@@ -384,7 +439,8 @@ export function formatDetectionPost(post) {
     teeVerified: post.result?.teeVerified || false,
     timestamp: post.metadata?.timestamp,
     timeAgo: post.metadata?.timestamp ? getTimeAgo(post.metadata.timestamp) : 'Unknown',
-    socialUrl: post.socialUrl
+    socialUrl: post.socialUrl,
+    mockMode: post.mockMode || false
   };
 }
 
@@ -403,7 +459,26 @@ function getTimeAgo(timestamp) {
   return 'Just now';
 }
 
+// Verify if a post exists on testnet (for debugging)
+async function verifyTestnetPost(accountId, timestamp) {
+  try {
+    console.log(`🔍 Verifying testnet post: ${accountId}@${timestamp}`);
+    const contract = await getSocialContract();
+    
+    const result = await contract.get({
+      keys: [`${accountId}/post/main`]
+    });
+    
+    console.log('📋 Testnet post verification result:', result);
+    return result;
+  } catch (error) {
+    console.error('❌ Failed to verify testnet post:', error);
+    return null;
+  }
+}
+
 // Export all functions
 export {
-  getSocialContract
+  getSocialContract,
+  verifyTestnetPost
 }; 

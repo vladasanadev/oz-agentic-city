@@ -25,10 +25,11 @@ npm run dev
 
 ## How It Works
 
-### Automatic Fallback Mode
-The app automatically detects if NEAR Social contract is available:
-- ✅ **Real NEAR Social**: Uses blockchain storage, real transactions
-- 🔄 **Mock Mode**: Uses in-memory storage, fake transactions (for testing)
+### Smart Fallback System
+The app tries real NEAR Social testnet contract first, then falls back as needed:
+- ✅ **Real NEAR Social Testnet**: Uses v1.social08.testnet for real blockchain storage
+- 🔄 **Automatic Fallback**: Uses sample data when gas limits exceeded or contract unavailable
+- 🔄 **Per-Request Fallback**: Each request tries real contract first, no permanent mock mode
 
 ### Mock Mode Features
 When using mock mode, you get:
@@ -77,6 +78,12 @@ For production, ensure:
 
 ## Troubleshooting
 
+### "Gas Limit Exceeded" Error
+- **Common**: NEAR Social queries with wildcards (`*`) are expensive
+- **Solution**: App automatically falls back to mock mode with sample data
+- **Why**: Querying all posts from all users exceeds blockchain gas limits
+- **Fix**: Use targeted queries or wait for NEAR Social optimization
+
 ### "Social contract not available" Error
 - **Expected**: Contract doesn't exist on testnet
 - **Solution**: App automatically falls back to mock mode
@@ -91,6 +98,11 @@ For production, ensure:
 - Verify wallet is connected
 - Ensure sufficient NEAR balance for transactions
 - Check contract address is correct for your network
+
+### Gas Limit Solutions
+1. **Immediate**: Use mock mode (automatic fallback)
+2. **Short-term**: Query specific known accounts instead of wildcards
+3. **Long-term**: Use NEAR Social indexer or build custom social contract
 
 ## Environment Variables
 

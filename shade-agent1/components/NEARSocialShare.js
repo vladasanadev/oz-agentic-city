@@ -90,7 +90,12 @@ export default function NEARSocialShare({ result }) {
           </div>
           
           <p className="text-sm text-gray-300 mb-3">
-            Your detection result has been shared with the community!
+            {shareResult.mockMode 
+              ? 'Your detection result has been saved to test data (mock mode)!'
+              : shareResult.realBlockchain
+              ? 'Your detection result has been posted to NEAR Social testnet blockchain!'
+              : 'Your detection result has been shared with the community!'
+            }
           </p>
           
           <div className="space-y-2 text-xs">
@@ -100,7 +105,19 @@ export default function NEARSocialShare({ result }) {
                 {shareResult.transactionHash?.substring(0, 16)}...
               </span>
             </div>
-            {shareResult.socialUrl && (
+            {shareResult.testnetExplorer ? (
+              <div className="flex justify-between">
+                <span className="text-gray-400">Testnet Transaction:</span>
+                <a 
+                  href={shareResult.testnetExplorer}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-400 hover:text-blue-300 transition-colors"
+                >
+                  View on Explorer
+                </a>
+              </div>
+            ) : shareResult.socialUrl ? (
               <div className="flex justify-between">
                 <span className="text-gray-400">Social Post:</span>
                 <a 
@@ -112,7 +129,12 @@ export default function NEARSocialShare({ result }) {
                   View on NEAR Social
                 </a>
               </div>
-            )}
+            ) : shareResult.mockMode ? (
+              <div className="flex justify-between">
+                <span className="text-gray-400">Mode:</span>
+                <span className="text-yellow-400">Test Data (Mock)</span>
+              </div>
+            ) : null}
           </div>
           
           <div className="mt-4 flex gap-2">

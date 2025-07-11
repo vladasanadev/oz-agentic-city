@@ -80,10 +80,26 @@ export default function Community() {
         </div>
 
         {/* Content */}
-        {activeTab === 'feed' ? (
-          <div>
-            {/* NEAR Wallet Status */}
-            {!nearWallet.connected && (
+                 {activeTab === 'feed' ? (
+           <div>
+             {/* Testnet Info */}
+             <div className="mb-8 border border-blue-700 bg-blue-900/20 p-6 rounded-lg">
+               <div className="flex items-center gap-3 mb-3">
+                 <svg className="w-6 h-6 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                   <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd"/>
+                 </svg>
+                 <h3 className="text-lg font-medium text-blue-400">NEAR Social Testnet</h3>
+               </div>
+               <p className="text-blue-300 mb-4">
+                 This app connects to <strong>v1.social08.testnet</strong> for testing. Posts here won't appear on the main near.social website (which uses mainnet).
+               </p>
+               <p className="text-blue-600 text-sm">
+                 Successful testnet posts can be verified on NEAR Explorer. This is perfect for testing all social features safely.
+               </p>
+             </div>
+
+             {/* NEAR Wallet Status */}
+             {!nearWallet.connected && (
               <div className="mb-8 border border-yellow-700 bg-yellow-900/20 p-6 rounded-lg">
                 <div className="flex items-center gap-3 mb-3">
                   <svg className="w-6 h-6 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">

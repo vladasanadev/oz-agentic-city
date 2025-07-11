@@ -60,7 +60,8 @@ export async function mockShareDetectionResult(result, message = '') {
       success: true,
       transactionHash: 'mock-tx-' + timestamp,
       postData: postData,
-      socialUrl: `https://near.social/post/${accountId}@${timestamp}`
+      socialUrl: null, // No real social URL in mock mode
+      mockMode: true
     };
 
   } catch (error) {
@@ -78,7 +79,8 @@ export async function mockGetCommunityFeed(limit = 50) {
     
     const posts = mockPosts.slice(0, limit).map(post => ({
       ...post,
-      socialUrl: `https://near.social/post/${post.accountId}@${post.metadata?.timestamp}`
+      socialUrl: null, // No real social URLs in mock mode
+      mockMode: true
     }));
 
     console.log(`✅ Mock: Found ${posts.length} detection posts`);
