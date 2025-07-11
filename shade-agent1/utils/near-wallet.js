@@ -18,6 +18,10 @@ const nearConfig = {
 let nearConnection = null;
 let walletConnection = null;
 
+// Cache for balance requests to avoid excessive RPC calls
+const balanceCache = new Map();
+const BALANCE_CACHE_DURATION = 30000; // 30 seconds
+
 // Initialize NEAR connection
 export async function initializeNEAR() {
   if (!isBrowser) {
@@ -114,14 +118,27 @@ export async function handleWalletCallback() {
 
 // Get account balance
 export async function getBalance(accountId = null) {
+  const cacheKey = accountId || 'current';
+  const now = Date.now();
+  
+  // Check cache first
+  if (balanceCache.has(cacheKey)) {
+    const cached = balanceCache.get(cacheKey);
+    if (now - cached.timestamp < BALANCE_CACHE_DURATION) {
+      console.log('📦 Using cached balance for', cacheKey);
+      return cached.data;
+    }
+  }
+  
   try {
     const wallet = await getWallet();
     const account = accountId ? 
       await nearConnection.account(accountId) : 
       wallet.account();
     
+    console.log('🔍 Fetching fresh balance for', cacheKey);
     const balance = await account.getAccountBalance();
-    return {
+    const result = {
       total: balance.total,
       available: balance.available,
       staked: balance.staked,
@@ -130,6 +147,14 @@ export async function getBalance(accountId = null) {
       totalNEAR: (parseFloat(balance.total) / 1e24).toFixed(4),
       availableNEAR: (parseFloat(balance.available) / 1e24).toFixed(4)
     };
+    
+    // Cache the result
+    balanceCache.set(cacheKey, {
+      data: result,
+      timestamp: now
+    });
+    
+    return result;
   } catch (error) {
     console.error('Error getting balance:', error);
     return {
@@ -270,13 +295,25 @@ export function onWalletStateChange(callback) {
     return () => {};
   }
   
-  // Listen for wallet connection changes
+  // Listen for wallet connection changes - much less frequently to avoid rate limiting
   const interval = setInterval(async () => {
     const status = await getWalletStatus();
     callback(status);
-  }, 5000); // Check every 5 seconds
+  }, 30000); // Check every 30 seconds instead of 5
   
   return () => clearInterval(interval);
+}
+
+// Manual wallet status refresh (use this instead of frequent polling)
+export async function refreshWalletStatus() {
+  console.log('🔄 Manually refreshing wallet status...');
+  return await getWalletStatus();
+}
+
+// Clear balance cache (useful after transactions)
+export function clearBalanceCache() {
+  balanceCache.clear();
+  console.log('🧹 Balance cache cleared');
 }
 
 // Export configuration for debugging

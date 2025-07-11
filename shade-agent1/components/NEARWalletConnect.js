@@ -5,7 +5,8 @@ import {
   signOut, 
   handleWalletError,
   onWalletStateChange,
-  handleWalletCallback
+  handleWalletCallback,
+  refreshWalletStatus
 } from '../utils/near-wallet';
 
 export default function NEARWalletConnect() {
@@ -47,7 +48,7 @@ export default function NEARWalletConnect() {
 
     loadWalletStatus();
 
-    // Set up wallet state change listener
+    // Set up wallet state change listener (reduced frequency to avoid rate limiting)
     const unsubscribe = onWalletStateChange((status) => {
       setWalletState({
         connected: status.connected,
@@ -65,6 +66,7 @@ export default function NEARWalletConnect() {
     try {
       setWalletState(prev => ({ ...prev, loading: true, error: null }));
       await signIn();
+      // Note: Status will be refreshed when user returns from wallet via handleWalletCallback
     } catch (error) {
       console.error('Sign in error:', error);
       setWalletState(prev => ({
