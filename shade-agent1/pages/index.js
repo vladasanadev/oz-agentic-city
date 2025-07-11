@@ -1,4 +1,5 @@
 import Head from 'next/head';
+import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import FileUpload from '../components/FileUpload';
 import DetectionResults from '../components/DetectionResults';
@@ -161,13 +162,26 @@ export default function Home() {
                 {/* Header */}
                 <header className="border-b border-gray-800">
                     <div className="max-w-6xl mx-auto px-6 py-8">
-                        <div className="text-center">
-                            <h1 className="text-4xl font-light tracking-wide mb-2">
-                                DEEPFAKE DETECTION
-                            </h1>
-                            <p className="text-gray-400 text-sm uppercase tracking-widest">
-                                NEAR Shade Agent • TEE-Verified Processing
-                            </p>
+                        <div className="flex items-center justify-between mb-8">
+                            <div className="text-center flex-1">
+                                <h1 className="text-4xl font-light tracking-wide mb-2">
+                                    DEEPFAKE DETECTION
+                                </h1>
+                                <p className="text-gray-400 text-sm uppercase tracking-widest">
+                                    NEAR Shade Agent • TEE-Verified Processing
+                                </p>
+                            </div>
+                            
+                            <div className="flex items-center gap-4">
+                                <Link href="/community">
+                                    <div className="flex items-center gap-2 px-4 py-2 border border-gray-700 hover:border-gray-600 rounded cursor-pointer transition-colors">
+                                        <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                            <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z"/>
+                                        </svg>
+                                        <span className="text-sm text-gray-400">Community</span>
+                                    </div>
+                                </Link>
+                            </div>
                         </div>
                         
                         <div className="mt-8 space-y-6">
