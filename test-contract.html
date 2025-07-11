@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Contract Function Test</title>
+    <script src="https://cdn.ethers.io/lib/ethers-5.2.umd.min.js"></script>
+</head>
+<body>
+    <h1>Contract Function Test</h1>
+    <button onclick="testContract()">Test Contract Functions</button>
+    <div id="results"></div>
+
+    <script>
+        const CONTRACT_ADDRESS = "0x279558244E243cF21a2E7F8955A69Ad52896B5e4";
+        const CONTRACT_ABI = [
+            "function requestDetectionWithResult(string fileHash, string filename) public",
+            "function requestDetection(string fileHash, string filename) public",
+            "function getTotalScans() public view returns (uint256)",
+            "function hasResult(string fileHash) public view returns (bool)"
+        ];
+
+        async function testContract() {
+            const results = document.getElementById('results');
+            results.innerHTML = "Testing...";
+            
+            try {
+                if (!window.ethereum) {
+                    results.innerHTML = "MetaMask not found!";
+                    return;
+                }
+
+                const provider = new ethers.providers.Web3Provider(window.ethereum);
+                const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider);
+                
+                // Test 1: Check if getTotalScans works
+                try {
+                    const totalScans = await contract.getTotalScans();
+                    results.innerHTML += `<p>✅ getTotalScans() works: ${totalScans}</p>`;
+                } catch (error) {
+                    results.innerHTML += `<p>❌ getTotalScans() failed: ${error.message}</p>`;
+                }
+
+                // Test 2: Check if requestDetectionWithResult exists
+                try {
+                    // Try to estimate gas (this will fail if function doesn't exist)
+                    await contract.estimateGas.requestDetectionWithResult("testhash", "testfile.jpg");
+                    results.innerHTML += `<p>✅ requestDetectionWithResult() exists</p>`;
+                } catch (error) {
+                    results.innerHTML += `<p>❌ requestDetectionWithResult() not found: ${error.message}</p>`;
+                }
+
+                // Test 3: Check if old requestDetection exists
+                try {
+                    await contract.estimateGas.requestDetection("testhash", "testfile.jpg");
+                    results.innerHTML += `<p>⚠️ Old requestDetection() still exists (old contract deployed)</p>`;
+                } catch (error) {
+                    results.innerHTML += `<p>✅ Old requestDetection() not found (new contract deployed)</p>`;
+                }
+
+            } catch (error) {
+                results.innerHTML += `<p>❌ General error: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html> 
