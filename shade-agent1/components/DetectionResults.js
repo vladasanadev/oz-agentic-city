@@ -108,6 +108,65 @@ export default function DetectionResults({ result, isAnalyzing }) {
         </div>
       )}
 
+      {/* NEAR Wallet Integration */}
+      {result.nearWallet && (
+        <div className={`border p-4 ${result.nearWallet.connected ? 'border-blue-700 bg-blue-900/20' : 'border-gray-700 bg-gray-900/20'}`}>
+          <div className="flex items-center gap-2 mb-2">
+            <div className={`w-2 h-2 rounded-full ${result.nearWallet.connected ? 'bg-blue-500' : 'bg-gray-500'}`}></div>
+            <h4 className={`text-xs uppercase tracking-wider ${result.nearWallet.connected ? 'text-blue-400' : 'text-gray-400'}`}>
+              NEAR Wallet {result.nearWallet.connected ? 'Connected' : 'Not Connected'}
+            </h4>
+          </div>
+          {result.nearWallet.connected ? (
+            <div className="space-y-1">
+              <p className="text-xs text-gray-500">
+                Account: {result.nearWallet.accountId}
+              </p>
+              <p className="text-xs text-gray-600">
+                Balance: {result.nearWallet.balance} NEAR
+              </p>
+              <p className="text-xs text-gray-600">
+                Ready for blockchain features
+              </p>
+            </div>
+          ) : (
+            <p className="text-xs text-gray-500">
+              Connect NEAR wallet for enhanced features
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* System Status */}
+      {result.systemStatus && (
+        <div className="border border-gray-700 p-4 bg-gray-900/20">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+            <h4 className="text-xs uppercase tracking-wider text-purple-400">System Status</h4>
+          </div>
+          <div className="space-y-2 text-xs">
+            <div className="flex justify-between">
+              <span className="text-gray-400">TEE Processing</span>
+              <span className={result.systemStatus.teeVerified ? 'text-green-400' : 'text-yellow-400'}>
+                {result.systemStatus.teeVerified ? 'Verified' : 'Fallback'}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-400">NEAR Wallet</span>
+              <span className={result.systemStatus.nearConnected ? 'text-green-400' : 'text-gray-400'}>
+                {result.systemStatus.nearConnected ? 'Connected' : 'Not Connected'}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-400">Worker Account</span>
+              <span className="text-gray-300 font-mono">
+                {result.systemStatus.workerAccount?.substring(0, 8)}...
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Technical Analysis */}
       <div className="border border-gray-800 p-6">
         <h4 className="text-xs uppercase tracking-wider text-gray-500 mb-4">Technical Analysis</h4>

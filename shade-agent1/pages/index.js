@@ -4,6 +4,7 @@ import FileUpload from '../components/FileUpload';
 import DetectionResults from '../components/DetectionResults';
 import WalletConnection from '../components/WalletConnection';
 import SplineCanvas from '../components/SplineCanvas';
+import NEARWalletConnect, { useNEARWallet } from '../components/NEARWalletConnect';
 
 export default function Home() {
     const [accountId, setAccountId] = useState();
@@ -17,6 +18,9 @@ export default function Home() {
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [totalScans, setTotalScans] = useState(0);
+    
+    // NEAR wallet state
+    const nearWallet = useNEARWallet();
 
     const getWorkerDetails = async () => {
         try {
@@ -78,7 +82,20 @@ export default function Home() {
             const formData = new FormData();
             formData.append('file', selectedFile);
 
+            // Add NEAR wallet information to the request
+            if (nearWallet.connected) {
+                formData.append('nearAccountId', nearWallet.accountId);
+                formData.append('nearBalance', nearWallet.balance?.availableNEAR || '0');
+                console.log('🔗 NEAR wallet connected:', nearWallet.accountId);
+            }
+
             console.log('🚀 Submitting to Shade Agent for TEE processing...');
+            console.log('📊 System Status:', {
+                teeVerified: teeVerified,
+                nearConnected: nearWallet.connected,
+                workerAccount: accountId,
+                userAccount: nearWallet.accountId
+            });
             
             const response = await fetch('/api/detectDeepfake', {
                 method: 'POST',
@@ -88,9 +105,24 @@ export default function Home() {
             const data = await response.json();
             
             if (data.success) {
-                setDetectionResult(data.result);
+                // Enhance result with NEAR wallet information
+                const enhancedResult = {
+                    ...data.result,
+                    nearWallet: nearWallet.connected ? {
+                        accountId: nearWallet.accountId,
+                        balance: nearWallet.balance?.availableNEAR,
+                        connected: true
+                    } : { connected: false },
+                    systemStatus: {
+                        teeVerified: teeVerified,
+                        nearConnected: nearWallet.connected,
+                        workerAccount: accountId
+                    }
+                };
+                
+                setDetectionResult(enhancedResult);
                 setTotalScans(prev => prev + 1);
-                console.log('✅ Detection completed:', data.result);
+                console.log('✅ Detection completed:', enhancedResult);
             } else {
                 throw new Error(data.error || 'Detection failed');
             }
@@ -138,15 +170,25 @@ export default function Home() {
                             </p>
                         </div>
                         
-                        <div className="mt-8">
-                            <WalletConnection
-                                accountId={accountId}
-                                balance={balance}
-                                teeVerified={teeVerified}
-                                teeEndpoint={teeEndpoint}
-                                source={source}
-                                isLoading={isLoading}
-                            />
+                        <div className="mt-8 space-y-6">
+                            {/* TEE Worker Connection */}
+                            <div>
+                                <h3 className="text-xs uppercase tracking-wider text-gray-500 mb-3">TEE Worker Account</h3>
+                                <WalletConnection
+                                    accountId={accountId}
+                                    balance={balance}
+                                    teeVerified={teeVerified}
+                                    teeEndpoint={teeEndpoint}
+                                    source={source}
+                                    isLoading={isLoading}
+                                />
+                            </div>
+
+                            {/* NEAR Wallet Connection */}
+                            <div>
+                                <h3 className="text-xs uppercase tracking-wider text-gray-500 mb-3">NEAR Wallet</h3>
+                                <NEARWalletConnect />
+                            </div>
                         </div>
 
                         {/* Connection Status */}
@@ -166,14 +208,28 @@ export default function Home() {
                 {/* Main Content */}
                 <main className="max-w-6xl mx-auto px-6 py-12">
                     {/* Stats Bar */}
-                    <div className="grid grid-cols-3 gap-8 mb-16">
+                    <div className="grid grid-cols-4 gap-8 mb-16">
                         <div className="text-center">
                             <div className="text-2xl font-mono text-white">{totalScans.toString().padStart(3, '0')}</div>
                             <div className="text-xs text-gray-500 uppercase tracking-wider">Total Scans</div>
                         </div>
                         <div className="text-center">
-                            <div className="text-2xl font-mono text-white">TEE</div>
+                            <div className={`text-2xl font-mono ${teeVerified ? 'text-green-400' : 'text-yellow-400'}`}>
+                                {teeVerified ? 'TEE' : 'TEE'}
+                            </div>
                             <div className="text-xs text-gray-500 uppercase tracking-wider">Shade Agent</div>
+                            <div className={`text-xs ${teeVerified ? 'text-green-400' : 'text-yellow-400'}`}>
+                                {teeVerified ? 'Verified' : 'Fallback'}
+                            </div>
+                        </div>
+                        <div className="text-center">
+                            <div className={`text-2xl font-mono ${nearWallet.connected ? 'text-green-400' : 'text-gray-400'}`}>
+                                NEAR
+                            </div>
+                            <div className="text-xs text-gray-500 uppercase tracking-wider">Wallet</div>
+                            <div className={`text-xs ${nearWallet.connected ? 'text-green-400' : 'text-gray-400'}`}>
+                                {nearWallet.connected ? 'Connected' : 'Disconnected'}
+                            </div>
                         </div>
                         <div className="text-center">
                             <div className="text-2xl font-mono text-white">AI</div>
@@ -226,6 +282,28 @@ export default function Home() {
                                     </p>
                                     <p className="text-yellow-600 text-xs mt-1">
                                         Please wait while connecting to Shade Agent...
+                                    </p>
+                                </div>
+                            )}
+
+                            {accountId && !nearWallet.connected && (
+                                <div className="mt-6 border border-blue-800 bg-blue-900/20 p-4">
+                                    <p className="text-blue-400 text-sm">
+                                        NEAR wallet connection recommended
+                                    </p>
+                                    <p className="text-blue-600 text-xs mt-1">
+                                        Connect your NEAR wallet for enhanced features and future blockchain integration
+                                    </p>
+                                </div>
+                            )}
+
+                            {accountId && nearWallet.connected && (
+                                <div className="mt-6 border border-green-800 bg-green-900/20 p-4">
+                                    <p className="text-green-400 text-sm">
+                                        ✅ Full NEAR integration active
+                                    </p>
+                                    <p className="text-green-600 text-xs mt-1">
+                                        TEE processing + NEAR wallet connected • Ready for blockchain features
                                     </p>
                                 </div>
                             )}

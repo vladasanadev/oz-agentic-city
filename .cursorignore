@@ -7,4 +7,5 @@
 !.env.production.local
 !.env.development
 !.env.test
+!.env.development.local.example
 !.env.production
