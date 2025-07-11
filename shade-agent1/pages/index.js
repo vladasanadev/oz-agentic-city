@@ -1,30 +1,26 @@
 import Head from 'next/head';
-import styles from '../styles/Home.module.css';
 import { useState, useEffect } from 'react';
-import Overlay from '../components/Overlay';
-import Spline from '@splinetool/react-spline';
-
-const contractId = process.env.NEXT_PUBLIC_contractId;
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+import FileUpload from '../components/FileUpload';
+import DetectionResults from '../components/DetectionResults';
+import WalletConnection from '../components/WalletConnection';
+import SplineCanvas from '../components/SplineCanvas';
 
 export default function Home() {
-    const [message, setMessage] = useState('');
     const [accountId, setAccountId] = useState();
     const [balance, setBalance] = useState('0');
+    const [teeVerified, setTeeVerified] = useState(false);
+    const [teeEndpoint, setTeeEndpoint] = useState('');
+    const [source, setSource] = useState('');
     const [selectedFile, setSelectedFile] = useState(null);
     const [detectionResult, setDetectionResult] = useState(null);
     const [isProcessing, setIsProcessing] = useState(false);
     const [error, setError] = useState('');
-    const [dragOver, setDragOver] = useState(false);
-
-    const setMessageHide = async (message, dur = 3000, success = false) => {
-        setMessage({ text: message, success });
-        await sleep(dur);
-        setMessage('');
-    };
+    const [isLoading, setIsLoading] = useState(true);
+    const [totalScans, setTotalScans] = useState(0);
 
     const getWorkerDetails = async () => {
         try {
+            setIsLoading(true);
             const res = await fetch('/api/getWorkerAccount').then((r) => r.json());
             if (res.error) {
                 console.log('Error getting worker account:', res.error);
@@ -32,12 +28,15 @@ export default function Home() {
                 return;
             }
             setAccountId(res.accountId);
-            // Convert balance from yoctoNEAR to NEAR
-            const formattedBalance = (parseFloat(res.balance) / 1e24).toFixed(4);
-            setBalance(formattedBalance);
+            setBalance(res.balance);
+            setTeeVerified(res.teeVerified);
+            setTeeEndpoint(res.teeEndpoint);
+            setSource(res.source);
         } catch (error) {
             console.log('Error fetching worker details:', error);
             setError('Failed to fetch worker account details');
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -47,7 +46,7 @@ export default function Home() {
         return () => clearInterval(interval);
     }, []);
 
-    const handleFileSelect = (file) => {
+    const handleFileUpload = (file) => {
         const maxSize = 50 * 1024 * 1024; // 50MB
         const supportedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'video/mp4', 'video/mov', 'video/avi', 'video/webm'];
         
@@ -64,25 +63,6 @@ export default function Home() {
         setSelectedFile(file);
         setError('');
         setDetectionResult(null);
-    };
-
-    const handleDrop = (e) => {
-        e.preventDefault();
-        setDragOver(false);
-        const files = e.dataTransfer.files;
-        if (files.length > 0) {
-            handleFileSelect(files[0]);
-        }
-    };
-
-    const handleDragOver = (e) => {
-        e.preventDefault();
-        setDragOver(true);
-    };
-
-    const handleDragLeave = (e) => {
-        e.preventDefault();
-        setDragOver(false);
     };
 
     const detectDeepfake = async () => {
@@ -109,7 +89,7 @@ export default function Home() {
             
             if (data.success) {
                 setDetectionResult(data.result);
-                setMessageHide('Detection completed successfully!', 3000, true);
+                setTotalScans(prev => prev + 1);
                 console.log('✅ Detection completed:', data.result);
             } else {
                 throw new Error(data.error || 'Detection failed');
@@ -129,246 +109,173 @@ export default function Home() {
     };
 
     return (
-        <div className={styles.container}>
+        <div className="relative min-h-screen bg-black text-white overflow-hidden">
             <Head>
                 <title>Deepfake Detection Agent</title>
                 <meta name="description" content="AI-powered deepfake detection using NEAR Shade Agents" />
                 <link rel="icon" href="/favicon.ico" />
             </Head>
-            
-            {/* Spline 3D Background */}
-            <div className={styles.splineBackground}>
-                <Spline
-                    scene="https://prod.spline.design/T13hoFcu40hYf79c/scene.splinecode" 
+
+            {/* 3D Spline Background */}
+            <div className="fixed inset-0 z-0 pointer-events-none">
+                <SplineCanvas
+                    splineUrl="https://prod.spline.design/T13hoFcu40hYf79c/scene.splinecode"
+                    className="w-full h-full object-cover"
                 />
             </div>
-            
-            <Overlay message={message} />
 
-            <main className={styles.main}>
-                <h1 className={styles.title}>Deepfake Detection Agent</h1>
-                <div className={styles.subtitleContainer}>
-                    <h2 className={styles.subtitle}>Powered by NEAR Shade Agents</h2>
-                </div>
-                
-                <p className={styles.description}>
-                    Upload images or videos to detect AI-generated deepfakes using privacy-preserving TEE technology.
-                    Your files are processed securely and never stored.
-                </p>
-
-                <div className={styles.featuresGrid}>
-                    <div className={styles.feature}>
-                        <span className={styles.featureIcon}>🔒</span>
-                        <span>TEE Privacy</span>
-                    </div>
-                    <div className={styles.feature}>
-                        <span className={styles.featureIcon}>🤖</span>
-                        <span>AI Detection</span>
-                    </div>
-                    <div className={styles.feature}>
-                        <span className={styles.featureIcon}>⚡</span>
-                        <span>Real-time</span>
-                    </div>
-                    <div className={styles.feature}>
-                        <span className={styles.featureIcon}>✅</span>
-                        <span>Verifiable</span>
-                    </div>
-                </div>
-
-                {/* File Upload Area */}
-                <div 
-                    className={`${styles.uploadArea} ${dragOver ? styles.dragOver : ''} ${selectedFile ? styles.hasFile : ''}`}
-                    onDrop={handleDrop}
-                    onDragOver={handleDragOver}
-                    onDragLeave={handleDragLeave}
-                    onClick={() => document.getElementById('fileInput').click()}
-                >
-                    <input
-                        id="fileInput"
-                        type="file"
-                        accept="image/*,video/*"
-                        onChange={(e) => handleFileSelect(e.target.files[0])}
-                        style={{ display: 'none' }}
-                    />
-                    
-                    {selectedFile ? (
-                        <div className={styles.fileSelected}>
-                            <div className={styles.fileIcon}>
-                                {selectedFile.type.startsWith('image/') ? '🖼️' : '🎥'}
-                            </div>
-                            <div className={styles.fileInfo}>
-                                <div className={styles.fileName}>{selectedFile.name}</div>
-                                <div className={styles.fileSize}>
-                                    {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
-                                </div>
-                            </div>
-                            <button 
-                                className={styles.removeFile}
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    resetDetection();
-                                }}
-                            >
-                                ✕
-                            </button>
-                        </div>
-                    ) : (
-                        <div className={styles.uploadPrompt}>
-                            <div className={styles.uploadIcon}>📁</div>
-                            <div className={styles.uploadText}>
-                                <strong>Drop files here or click to upload</strong>
-                                <br />
-                                <small>Supports: JPG, PNG, MP4, MOV, AVI, WebM (max 50MB)</small>
-                            </div>
-                        </div>
-                    )}
-                </div>
-
-                {error && (
-                    <div className={styles.error}>
-                        ⚠️ {error}
-                    </div>
-                )}
-
-                {/* Detection Button */}
-                <button 
-                    className={`${styles.detectButton} ${isProcessing ? styles.processing : ''}`}
-                    onClick={detectDeepfake}
-                    disabled={!selectedFile || isProcessing}
-                >
-                    {isProcessing ? (
-                        <>
-                            <span className={styles.spinner}></span>
-                            🔄 Processing in TEE...
-                        </>
-                    ) : (
-                        '🚀 Detect Deepfake'
-                    )}
-                </button>
-
-                {/* Detection Results */}
-                {detectionResult && (
-                    <div className={styles.resultContainer}>
-                        <h3>🎯 Detection Results</h3>
-                        <div className={`${styles.resultCard} ${detectionResult.isDeepfake ? styles.deepfake : styles.authentic}`}>
-                            <div className={styles.resultHeader}>
-                                <span className={styles.resultIcon}>
-                                    {detectionResult.isDeepfake ? '⚠️' : '✅'}
-                                </span>
-                                <span className={styles.resultStatus}>
-                                    {detectionResult.isDeepfake ? 'Deepfake Detected' : 'Authentic Media'}
-                                </span>
-                            </div>
-                            
-                            <div className={styles.confidenceBar}>
-                                <div className={styles.confidenceLabel}>
-                                    Confidence: {(detectionResult.confidence * 100).toFixed(1)}%
-                                </div>
-                                <div className={styles.confidenceProgress}>
-                                    <div 
-                                        className={styles.confidenceFill}
-                                        style={{ width: `${detectionResult.confidence * 100}%` }}
-                                    ></div>
-                                </div>
-                            </div>
-
-                            <div className={styles.resultDetails}>
-                                <div className={styles.detailRow}>
-                                    <span>Model Version:</span>
-                                    <span>{detectionResult.modelVersion}</span>
-                                </div>
-                                <div className={styles.detailRow}>
-                                    <span>Processing Time:</span>
-                                    <span>{detectionResult.processingTime}ms</span>
-                                </div>
-                                <div className={styles.detailRow}>
-                                    <span>TEE Verified:</span>
-                                    <span>{detectionResult.teeVerified ? '✅ Yes' : '❌ No'}</span>
-                                </div>
-                                <div className={styles.detailRow}>
-                                    <span>File Entropy:</span>
-                                    <span>{detectionResult?.result?.features?.entropy?.toFixed(2) || 'N/A'}</span>
-                                </div>
-                            </div>
-
-                            <div className={styles.securityBadges}>
-                                <div className={styles.badge}>
-                                    🔒 TEE Processed
-                                </div>
-                                <div className={styles.badge}>
-                                    🤖 AI Verified
-                                </div>
-                                <div className={styles.badge}>
-                                    🌐 NEAR Blockchain
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {/* Worker Account Status */}
-                <div className={styles.grid}>
-                    <div className={styles.card}>
-                        <h3>🔧 Shade Agent Status</h3>
-                        <div className={styles.accountInfo}>
-                            <p>
-                                <strong>Worker Account:</strong><br />
-                                {accountId ? (
-                                    <>
-                                        {accountId.length > 30 
-                                            ? `${accountId.substring(0, 15)}...${accountId.substring(accountId.length - 10)}`
-                                            : accountId
-                                        }
-                                        <button
-                                            className={styles.copyBtn}
-                                            onClick={() => {
-                                                navigator.clipboard.writeText(accountId);
-                                                setMessageHide('Account ID copied!', 1000, true);
-                                            }}
-                                        >
-                                            📋
-                                        </button>
-                                    </>
-                                ) : (
-                                    'Loading...'
-                                )}
-                            </p>
-                            <p>
-                                <strong>Balance:</strong> {balance} NEAR
-                            </p>
-                            <p>
-                                <strong>Status:</strong> <span className={styles.statusActive}>🟢 Active</span>
+            {/* Main Content (z-10) */}
+            <div className="relative z-10">
+                {/* Header */}
+                <header className="border-b border-gray-800">
+                    <div className="max-w-6xl mx-auto px-6 py-8">
+                        <div className="text-center">
+                            <h1 className="text-4xl font-light tracking-wide mb-2">
+                                DEEPFAKE DETECTION
+                            </h1>
+                            <p className="text-gray-400 text-sm uppercase tracking-widest">
+                                NEAR Shade Agent • TEE-Verified Processing
                             </p>
                         </div>
                         
-                        {parseFloat(balance) < 1 && (
-                            <div className={styles.lowBalanceWarning}>
-                                ⚠️ Low balance! Get testnet NEAR from{' '}
-                                <a 
-                                    href="https://near-faucet.io/" 
-                                    target="_blank" 
-                                    rel="noopener noreferrer"
-                                    className={styles.faucetLink}
-                                >
-                                    the faucet
-                                </a>
+                        <div className="mt-8">
+                            <WalletConnection
+                                accountId={accountId}
+                                balance={balance}
+                                teeVerified={teeVerified}
+                                teeEndpoint={teeEndpoint}
+                                source={source}
+                                isLoading={isLoading}
+                            />
+                        </div>
+
+                        {/* Connection Status */}
+                        {accountId && (
+                            <div className="mt-4 text-center">
+                                <div className="inline-flex items-center gap-2 px-4 py-2 border border-green-800 bg-green-900/20">
+                                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                                    <span className="text-xs text-green-400 font-mono">
+                                        {teeVerified ? 'TEE Verified' : 'Fallback Mode'}
+                                    </span>
+                                </div>
                             </div>
                         )}
                     </div>
-                </div>
+                </header>
 
-                {/* Information Section */}
-                <div className={styles.infoSection}>
-                    <h4>🔒 Privacy & Security</h4>
-                    <ul className={styles.infoList}>
-                        <li>✅ <strong>TEE Processing:</strong> Your files are processed in a secure enclave</li>
-                        <li>✅ <strong>No Storage:</strong> Files are deleted immediately after processing</li>
-                        <li>✅ <strong>Cryptographic Proofs:</strong> All results are verifiable</li>
-                        <li>✅ <strong>Autonomous:</strong> No human can access your data</li>
-                        <li>✅ <strong>Open Source:</strong> Transparent and auditable code</li>
-                    </ul>
-                </div>
-            </main>
+                {/* Main Content */}
+                <main className="max-w-6xl mx-auto px-6 py-12">
+                    {/* Stats Bar */}
+                    <div className="grid grid-cols-3 gap-8 mb-16">
+                        <div className="text-center">
+                            <div className="text-2xl font-mono text-white">{totalScans.toString().padStart(3, '0')}</div>
+                            <div className="text-xs text-gray-500 uppercase tracking-wider">Total Scans</div>
+                        </div>
+                        <div className="text-center">
+                            <div className="text-2xl font-mono text-white">TEE</div>
+                            <div className="text-xs text-gray-500 uppercase tracking-wider">Shade Agent</div>
+                        </div>
+                        <div className="text-center">
+                            <div className="text-2xl font-mono text-white">AI</div>
+                            <div className="text-xs text-gray-500 uppercase tracking-wider">Detection</div>
+                        </div>
+                    </div>
+
+                    {/* Worker Account Info */}
+                    {accountId && (
+                        <div className="mb-12 border border-gray-800 p-6">
+                            <h2 className="text-sm font-medium tracking-wider uppercase text-gray-400 mb-4">
+                                Worker Account Status
+                            </h2>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                                <div>
+                                    <label className="text-xs text-gray-500 block">Account ID</label>
+                                    <p className="font-mono text-white">{accountId}</p>
+                                </div>
+                                <div>
+                                    <label className="text-xs text-gray-500 block">Balance</label>
+                                    <p className="font-mono text-white">{balance} NEAR</p>
+                                </div>
+                                <div>
+                                    <label className="text-xs text-gray-500 block">Status</label>
+                                    <p className={`font-mono ${teeVerified ? 'text-green-400' : 'text-yellow-400'}`}>
+                                        {teeVerified ? 'TEE Verified' : 'Fallback Mode'}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Upload & Results */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
+                        {/* Upload Section */}
+                        <div>
+                            <h2 className="text-xl font-light mb-8 tracking-wide">Upload Media</h2>
+                            <FileUpload 
+                                onFileUpload={handleFileUpload}
+                                isProcessing={isProcessing}
+                                disabled={!accountId}
+                                selectedFile={selectedFile}
+                                onRemoveFile={resetDetection}
+                            />
+                            
+                            {!accountId && !isLoading && (
+                                <div className="mt-6 border border-yellow-800 bg-yellow-900/20 p-4">
+                                    <p className="text-yellow-400 text-sm">
+                                        TEE worker account connection required
+                                    </p>
+                                    <p className="text-yellow-600 text-xs mt-1">
+                                        Please wait while connecting to Shade Agent...
+                                    </p>
+                                </div>
+                            )}
+
+                            {error && (
+                                <div className="mt-6 border border-red-800 bg-red-900/20 p-4">
+                                    <p className="text-red-400 text-sm">
+                                        {error}
+                                    </p>
+                                </div>
+                            )}
+
+                            {/* Detection Button */}
+                            {selectedFile && (
+                                <div className="mt-6">
+                                    <button 
+                                        onClick={detectDeepfake}
+                                        disabled={!selectedFile || isProcessing}
+                                        className={`
+                                            w-full px-8 py-4 border text-sm uppercase tracking-wider transition-colors
+                                            ${isProcessing 
+                                                ? 'border-gray-600 text-gray-500 cursor-not-allowed' 
+                                                : 'border-gray-700 hover:border-gray-500 hover:bg-gray-900'
+                                            }
+                                        `}
+                                    >
+                                        {isProcessing ? (
+                                            <div className="flex items-center justify-center gap-2">
+                                                <div className="w-4 h-4 border border-gray-500 rounded-full animate-spin border-t-white"></div>
+                                                Processing in TEE...
+                                            </div>
+                                        ) : (
+                                            'Detect Deepfake'
+                                        )}
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Results Section */}
+                        <div>
+                            <h2 className="text-xl font-light mb-8 tracking-wide">Analysis Results</h2>
+                            <DetectionResults 
+                                result={detectionResult}
+                                isAnalyzing={isProcessing}
+                            />
+                        </div>
+                    </div>
+                </main>
+            </div>
         </div>
     );
 }
